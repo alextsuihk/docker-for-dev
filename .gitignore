@@ -1,0 +1,3 @@
+# data folder for docker containers (including https-ssl certs)
+
+data/

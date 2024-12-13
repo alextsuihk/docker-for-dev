@@ -1,0 +1,76 @@
+upstream api {
+  server ${API_HOST}:4000;
+#   server go:4000; # placeholder for future golang-based server
+}
+
+## application (minio, express & react asset)
+server {
+    listen 80;
+    listen [::]:80;
+    # listen 443 ssl http2; # uncomment out after initializing certbot
+    # listen [::]:443 ssl http2; # uncomment out after initializing certbot
+
+    server_name ${APP_URL};
+
+    # uncomment out after initializing certbot
+    # if ($scheme != "https") {
+    # return 301 https://$host$request_uri;
+    # }
+
+    #ssl_certificate /etc/letsencrypt/live/${APP_URL}/fullchain.pem; # uncomment out after initializing certbot
+    #ssl_certificate_key /etc/letsencrypt/live/${APP_URL}/privkey.pem; # uncomment out after initializing certbot
+
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Host $http_host;
+
+    proxy_connect_timeout 300;
+
+    # certbot
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    # minio
+    location ~ ^/(react|s3-pub|s3-priv) {
+        proxy_pass  http://minio:9000;
+    }
+
+    # API (restful & apollo) & socket.io
+    location ~ ^/(api|apollo|socket.io)/ {
+        proxy_pass  http://api;
+    }
+
+    # serve React static assets
+    location / {
+        proxy_pass  https://school.inspire.hk/react/build;
+    }
+}
+
+## s3 (minio) storage
+# server {
+# #    include /etc/nginx/conf.d/snippets/listen-80-443;
+#     listen 80;
+#     server_name ${S3_URL};
+
+#     # ssl_certificate /etc/letsencrypt/live/${S3_URL}/fullchain.pem; # uncomment out after initializing certbot
+#     # ssl_certificate_key /etc/letsencrypt/live/${S3_URL}/privkey.pem; # uncomment out after initializing certbot
+
+#     include /etc/nginx/conf.d/snippets/acme-challenge;
+#     include /etc/nginx/conf.d/snippets/errors;
+#     # include /etc/nginx/conf.d/snippets/redirect-to-https;
+
+#     # To allow special characters in headers
+#     ignore_invalid_headers off;
+#     # Allow any size file to be uploaded.
+#     # Set to a value such as 1000m; to restrict file size to a specific value
+#     client_max_body_size 0;
+#     # To disable buffering
+#     proxy_buffering off;
+
+#     # location /s3-pub {
+#     location ~ ^/(s3-pub|s3-priv) {
+#         include /etc/nginx/conf.d/snippets/proxy_set_header;
+#         proxy_pass  http://minio:9000;
+#     }
+# }

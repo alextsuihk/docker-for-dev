@@ -1,0 +1,94 @@
+###############################################################################
+# Base Configuration (without nginx & argonne)
+#
+###############################################################################
+version: '3.9'
+
+services:
+  ##### elasticSearch #####################################
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.1.1
+  #   # image: elasticsearch
+  #   container_name: elasticsearch
+  #   restart: always
+  #   ports:
+  #     - 9200:9200
+  #     - 9300:9300
+  #   volumes:
+  #     - ./data/elasticsearch:/usr/share/elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+
+  ##### go-access ##########################################
+
+  ##### redis #############################################
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - ./conf/redis/redis.conf:/redis.conf:ro
+    command: redis-server /redis.conf
+
+  ##### rabbitMQ ##########################################
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbitmq
+  #   restart: always
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+  #   volumes:
+  #     - ./data/rabbitmq:/var/lib/rabbitmq/
+  #     - ./data/rabbitmq-log:/var/log/rabbitmq/
+
+  ##### minio #############################################
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: always
+    expose:
+      - 9000 # expose for minio-setup to setup
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: 'root'
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-12345678}
+      # MINIO_SERVER_URL: ${MINIO_SERVER_URL:-http://localhost:9000}
+      # MINIO_BROWSER_REDIRECT_URL: 'http://localhost:9001'
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+
+  minioSetup:
+    image: minio/mc
+    container_name: minio-setup
+    environment:
+      USER: ${MINIO_USER:-argonne}
+      PASSWORD: ${MINIO_PASSWORD:-12345678}
+      PUBLIC_BUCKET: 'public'
+      PRIVATE_BUCKET: 'private'
+    volumes:
+      - ./conf/minio/setup.sh:/setup.sh:ro
+      - ./conf/minio/template.json:/template.json:ro
+    depends_on:
+      - minio
+    entrypoint: ['sh', 'setup.sh', 'minio']
+
+  ##### mongoDB ###########################################
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: root
+    #   MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    #   MONGO_INITDB_DATABASE: argonne
+    volumes:
+      - ./data/mongo:/data/db
+      # - ./conf/mongo/initdb.d:/docker-entrypoint-initdb.d:ro

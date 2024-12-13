@@ -1,0 +1,23 @@
+###############################################################################
+# Argonne Docker Container
+###############################################################################
+
+version: '3.9'
+
+services:
+  ##### argonne #####
+  argonne:
+    image: inspirehk/argonne:latest
+    container_name: argonne
+    ports:
+      - 4000:4000
+    volumes:
+      - ./.env:/app/.env:ro # for PM2 
+
+  ##### minio override #####
+  minio:
+    ports:
+    #   - 9000:9000 # nginx reverse-proxy port 9000
+      - 9001:9001 # disable console port
+
+  

@@ -1,0 +1,15 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "cSpell.flagWords": ["TODO", "WIP"],
+    "cSpell.words": [
+      "certbot",
+      "letsencrypt",
+      "webpush"
+    ]
+  }
+}
